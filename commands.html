@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <script>
+    Office.onReady(() => {
+      // Handler for ItemSend event
+      Office.actions.associate("checkSupportAddress", checkSupportAddress);
+    });
+
+    async function checkSupportAddress(event) {
+      try {
+        const item = Office.context.mailbox.item;
+        const toRecipients = (await getRecipients(item.to)) || [];
+        const ccRecipients = (await getRecipients(item.cc)) || [];
+
+        const allRecipients = [...toRecipients, ...ccRecipients].map(r => r.emailAddress.toLowerCase());
+        if (!allRecipients.includes("it@mabobenelux.com")) {
+          const proceed = confirm("You forgot to include it@mabobenelux.com. Do you still want to send?");
+          if (!proceed) {
+            event.completed({ allowEvent: false }); // cancel send
+            return;
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      event.completed({ allowEvent: true });
+    }
+
+    function getRecipients(field) {
+      return new Promise((resolve, reject) => {
+        if (!field) return resolve([]);
+        field.getAsync(result => {
+          if (result.status === Office.AsyncResultStatus.Succeeded) resolve(result.value);
+          else reject(result.error);
+        });
+      });
+    }
+  </script>
+</head>
+<body></body>
+</html>
